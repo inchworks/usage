@@ -16,6 +16,12 @@
 // Package usage generates statistics for an internet service, such as a web server.
 // User identities and IP addresses can be anonymised at the time of collection, so that no personal data is stored.
 // Therefore there should be no need under the EU GDPR to request permission for data collection.
+//
+// It also provides a logger that filters specified events and counts them instead. This is useful to stop logging of
+// common events by http.Server, caused by background noise from internet idiots. 
+// (Typically these are probes using unsupported TLS versions or attempting HTTPS connections without a domain name.
+// Also continuing access attempts with the domain of a previous holder of a virtual server's IP address.)
+
 package usage
 
 // Note:
