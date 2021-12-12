@@ -18,7 +18,7 @@
 // Therefore there should be no need under the EU GDPR to request permission for data collection.
 //
 // It also provides a logger that filters specified events and counts them instead. This is useful to stop logging of
-// common events by http.Server, caused by background noise from internet idiots. 
+// common events by http.Server, caused by background noise from internet idiots.
 // (Typically these are probes using unsupported TLS versions or attempting HTTPS connections without a domain name.
 // Also continuing access attempts with the domain of a previous holder of a virtual server's IP address.)
 
@@ -797,7 +797,9 @@ func (r *Recorder) save() {
 			// update statistic
 			s.Count += ec.n
 		}
-		st.Update(s)
+		if err := st.Update(s); err != nil {
+			return
+		}
 	}
 
 	// save distinct events
@@ -813,7 +815,9 @@ func (r *Recorder) save() {
 				Start:    r.periodStart,
 				Detail:   Seen,
 			}
-			st.Update(s)
+			if err := st.Update(s); err != nil {
+				return
+			}
 		}
 	}
 
