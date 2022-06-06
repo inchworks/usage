@@ -613,19 +613,19 @@ func getRollup(st StatisticStore, stats []*Statistic, toStart func(time.Time) ti
 		ss = append(ss, total) // save final total
 	}
 
-	// sort by time descending, count descending, event
-	compare := func(i, j int) bool {
-		if ss[i].Start == ss[j].Start {
-			if ss[i].Count == ss[j].Count {
-				return ss[i].Event < ss[j].Event
-			} else {
-				return ss[i].Count > ss[j].Count
-			}
-		} else {
+	// sort by time descending, category, count descending, event
+	sort.Slice(ss, func(i, j int) bool {
+		if ss[i].Start != ss[j].Start {
 			return ss[i].Start.After(ss[j].Start)
 		}
-	}
-	sort.Slice(ss, compare)
+		if ss[i].Category != ss[j].Category {
+			return ss[i].Category < ss[j].Category
+		}
+		if ss[i].Count != ss[j].Count {
+			return ss[i].Count > ss[j].Count
+		}
+		return ss[i].Event < ss[j].Event
+	})
 
 	// processed period
 	if len(ss) > 0 {
