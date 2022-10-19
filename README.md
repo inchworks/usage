@@ -31,7 +31,7 @@ For examples of use, see https://github.com/inchworks/picinch.
 
 These limitations could be improved on request:
 - The daily interval is aligned to UTC.
-- Up to 10 minutes of data are volatile and will be lost on server failure. This interval is not cofigurable.
+- Up to 10 minutes of data are volatile and will be lost on server failure. This interval is not configurable.
 
 ## Contributing
 
