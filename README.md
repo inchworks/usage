@@ -11,6 +11,9 @@ Therefore there should be no need under the EU GDPR to request or record users' 
 - Distinct identifiers and IP addresses seen daily are counted. Typically these are for signed-up users and for unknown visitors. 
 - Specified points in the lifetime of the server can be recorded to assist interpretation of the statistics.
 
+For better performance, counts are recorded in volatile storage and transferred to the database periodically.
+A callback function allows counts to be cached externally, and integrated before each database save.
+
 Data records are automatically reduced to limit the database storage used:
 - Base counts are rolled up into daily counts, and discarded, after a configurable number of days.
 - Daily counts are rolled up into monthly counts, and discarded, after a configurable number of days.
@@ -32,6 +35,7 @@ For examples of use, see https://github.com/inchworks/picinch.
 These limitations could be improved on request:
 - The daily interval is aligned to UTC.
 - Up to 10 minutes of data are volatile and will be lost on server failure. This interval is not configurable.
+- Event names are assumed to be unique across categories.
 
 ## Contributing
 

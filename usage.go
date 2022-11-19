@@ -26,6 +26,7 @@ package usage
 
 // Note:
 //  o Time periods are UTC.
+//  o Event names are assumed to be unique across categories. This may restriction may be removed in a future version.
 
 import (
 	"math/rand"
@@ -117,6 +118,9 @@ type Recorder struct {
 	keepEvents   int           // in months
 	keepMonths   int           // in months
 
+	// callbacks
+	saverCallback func(*Recorder)
+
 	chSaver *time.Ticker
 	chDone  chan bool
 
@@ -201,18 +205,27 @@ func New(st StatisticStore, anon Anonymise, baseDur time.Duration, baseDays int,
 	return r, nil
 }
 
-// Count increments the count for an event.
-func (r *Recorder) Count(event string, category string) {
+// Add increases the count for an event.
+func (r *Recorder) Add(event string, category string, count int) {
 
 	if event == "" {
 		event = "#"
-	} // something searchable for home page
+	} // something searchable for a default event (e.g. home web page)
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.count[event]++             // count events
-	r.category[event] = category // ## note aggregate - inefficient
+	n := r.count[event]
+	r.count[event] = n + count // count events
+	if n == 0 {
+		r.category[event] = category // note category for aggregation
+	}
+}
+
+// Count increments the count for an event.
+func (r *Recorder) Count(event string, category string) {
+
+	r.Add(event, category, 1)
 }
 
 // FormatID returns an anonymised name for a database ID, such as the ID of a logged-on user.
@@ -338,11 +351,27 @@ func (r *Recorder) Mark(event string, category string) error {
 
 // Seen counts distinct events seen within a period (such as visitors to a website).
 func (r *Recorder) Seen(event string, category string) {
+	r.SeenFirst(event, category)
+}
+
+// SeenFirst counts distinct events seen within a period (such as visitors to a website).
+// It returns true when this is the first sighting of an event.
+func (r *Recorder) SeenFirst(event string, category string) (first bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.seen[event] = true         // event occurred
-	r.category[event] = category // ## note aggregate - inefficient
+	first = !r.seen[event]
+	r.seen[event] = true // event occurred
+	if first {
+		r.category[event] = category // note category for aggregation
+	}
+	return
+}
+
+// SetSaverCallback specifies a function to be called when volatile counts are to be saved in the database.
+// It allows usage.Add() to be called for counts that have been cached for better performance.
+func (r *Recorder) SetSaverCallback(callback func(*Recorder)) {
+	r.saverCallback = callback
 }
 
 // Stop terminates recording.
@@ -839,6 +868,13 @@ func (r *Recorder) saver(chTick <-chan time.Time, chDone <-chan bool) {
 			r.now = t.UTC()
 
 			if r.now.After(r.volatileEnd) {
+
+				// integrate any external cached counts
+				if r.saverCallback != nil {	
+					r.saverCallback(r)
+				}
+
+				// save volatile counts
 				r.save()
 			}
 			if r.now.After(r.periodEnd) {
