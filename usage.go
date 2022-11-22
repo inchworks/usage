@@ -256,9 +256,9 @@ func (r *Recorder) FormatID(prefix string, id int64) string {
 	return prefix + s
 }
 
-// FormatIP returns an anonymised IP address.
+// FormatIPSeen returns an anonymised IP address, prefixed.
 // It is intended to be used as an event name for usage.Seen.
-func FormatIP(addr string) string {
+func FormatIPSeen(prefix, addr string) string {
 
 	// This is more complex than I hoped, because the format of the IP address is "IP:port"
 	// and we might not have a valid address.
@@ -293,7 +293,13 @@ func FormatIP(addr string) string {
 		return "" // unknown - cannot anonymise
 	}
 
-	return ipStr
+	return prefix + ipStr
+}
+
+// FormatIP returns an anonymised IP address.
+// It needs a prefix if it is intended to be used as an event name for usage.Seen.
+func FormatIP(addr string) string {
+	return FormatIPSeen("", addr)
 }
 
 // Get returns all statistics for base periods, days or months.
@@ -350,13 +356,7 @@ func (r *Recorder) Mark(event string, category string) error {
 }
 
 // Seen counts distinct events seen within a period (such as visitors to a website).
-func (r *Recorder) Seen(event string, category string) {
-	r.SeenFirst(event, category)
-}
-
-// SeenFirst counts distinct events seen within a period (such as visitors to a website).
-// It returns true when this is the first sighting of an event.
-func (r *Recorder) SeenFirst(event string, category string) (first bool) {
+func (r *Recorder) Seen(event string, category string) (first bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
