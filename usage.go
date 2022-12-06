@@ -208,6 +208,10 @@ func New(st StatisticStore, anon Anonymise, baseDur time.Duration, baseDays int,
 // Add increases the count for an event.
 func (r *Recorder) Add(event string, category string, count int) {
 
+	if count == 0 {
+		return // don't create a statistic for nothing
+	}
+
 	if event == "" {
 		event = "#"
 	} // something searchable for a default event (e.g. home web page)
