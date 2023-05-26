@@ -310,6 +310,14 @@ func FormatIP(addr string) string {
 // Statistics for a single period are grouped into a separate slice.
 func Get(st StatisticStore, ival Detail) [][]*Statistic {
 
+	return GetSignificant(st, ival, 0)
+}
+
+// GetSignificant returns statistics for base periods, days or months.
+// Statistics for a single period are grouped into a separate slice.
+// Counts less minimum are excluded.
+func GetSignificant(st StatisticStore, ival Detail, minimum int) [][]*Statistic {
+
 	sPeriods := make([][]*Statistic, 0, 16)
 	var stats []*Statistic
 	var before time.Time
@@ -340,6 +348,11 @@ func Get(st StatisticStore, ival Detail) [][]*Statistic {
 	// replace seen counts by daily average
 	if ival == Month {
 		average(st, sPeriods)
+	}
+
+	// remove non-significant counts
+	if minimum > 0 {
+		sPeriods = prune(sPeriods, minimum)
 	}
 
 	return sPeriods
@@ -695,8 +708,29 @@ func (r *Recorder) markLive() error {
 }
 
 // next returns the time of the next operation, UTC, aligned to detail
-func (r *Recorder) next(detail time.Duration) time.Time {
+func (r *Recorder) next(detail time.Duration) time.Time { 
 	return r.now.Truncate(detail).Add(detail)
+}
+
+// prune returns the statistics for a set of periods, with counts >= minimum.
+func prune(sPeriods [][]*Statistic, minimum int) [][]*Statistic {
+
+	sp1 := make([][]*Statistic, 0, 16)
+
+	// iterate through periods and stats, copying those with significant counts
+	for _, ss := range sPeriods {
+		ss1 := make([]*Statistic, 0, 32)
+
+		for _, s := range ss {
+			if s.Count >= minimum {
+				ss1 = append(ss1, s) // significant stat for period
+			}
+		}
+		if len(ss1) > 0 {
+			sp1 = append(sp1, ss1) // stats for period
+		}
+	}
+	return sp1
 }
 
 // rollup combines events into the parent period
